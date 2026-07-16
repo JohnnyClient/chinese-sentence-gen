@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -71,20 +71,20 @@
     
     <div class="controls">
         <div class="mode-selector">
-            <label><input type="radio" name="mode" value="normal" checked> Normal Mode (Осознанный)</label>
-            <label><input type="radio" name="mode" value="absurd"> Absurd Mode (Треш-режим)</label>
+            <label><input type="radio" name="mode" value="normal" checked> Normal Mode</label>
+            <label><input type="radio" name="mode" value="absurd"> Absurd Mode</label>
         </div>
         <div>
-            <label for="count">Кол-во:</label>
+            <label for="count">Number of sentences:</label>
             <input type="number" id="count" value="5" min="1" max="50">
         </div>
-        <button id="generateBtn">🎲 Сгенерировать</button>
+        <button id="generateBtn">🎲 Generate Sentences</button>
     </div>
 
     <div id="modeLabel" style="text-align: center; color: #7f8c8d; margin-bottom: 10px;">(normal)</div>
     
-    <div id="output">Нажми "Сгенерировать", чтобы начать магию...</div>
-    <button id="copyBtn" class="copy-btn">📋 Копировать всё</button>
+    <div id="output">Click "Generate" to start...</div>
+    <button id="copyBtn" class="copy-btn">📋 Copy All</button>
 
     <script src="script.js"></script>
 </body>

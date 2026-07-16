@@ -1,4 +1,4 @@
-// Absurd vocabulary (Chinese words)
+// Absurd vocabulary (остается для режима абсурда)
 const ABSURD_WORDS = {
     noun: ["屁股", "放屁", "狗屁", "王八", "笨蛋", "傻瓜", "混蛋", "夜壶", "马桶", "拖鞋", "臭虫", "蟑螂", "腋窝", "挠痒痒"],
     verb: ["放屁", "拉屎", "撒尿", "打嗝", "吃屎", "喝尿", "放风", "扯淡", "挠痒痒"],
@@ -6,36 +6,21 @@ const ABSURD_WORDS = {
     adj: ["傻逼", "牛逼", "变态", "恶心", "臭", "脏", "丑", "奇葩"]
 };
 
-// Words to exclude from generation
-const BLACKLIST = new Set([
-    "副词", "名词", "动词", "形容词", "状语", "定语", "主语", "谓语", "宾语", "补语",
-    "语法", "词性", "词类", "句子", "短语", "词汇", "语言", "文字", "汉字",
-    "拼音", "注音", "音标", "声调", "语调", "方言", "普通话", "文言文",
-    "概念", "理论", "定义", "原理", "规律", "法则", "公式", "方程",
-    "意思", "含义", "解释", "说明", "描述", "表达", "表示",
-    "程序", "代码", "算法", "函数", "变量", "参数", "接口", "模块",
-    "老兄", "哥们", "家伙", "小子", "丫头", "婆娘",
-    "将军", "司令", "政委", "元帅", "军事", "战略", "战术",
-    "菩萨", "佛祖", "上帝", "天使", "魔鬼", "神仙"
-]);
-
 let lexicon = null;
 
-// Fallback mini-dictionary in case cedict.txt is not found in the repo
+// Базовый набор, если cedict.txt не загрузится
 const fallbackLexicon = {
-    animate: ["人", "学生", "老师", "猫", "狗", "鸟"],
-    inanimate: ["书", "东西", "水", "苹果", "车"],
-    location: ["学校", "家", "中国", "北京", "商店"],
-    verb: ["吃", "看", "去", "做", "喝", "买"],
-    adj: ["好", "大", "小", "漂亮", "聪明"],
-    adv: ["很", "都", "也", "经常", "已经"],
-    question_word: ["什么", "谁", "哪里", "为什么", "怎么", "几", "多少"]
+    animate: ["学生", "老师", "医生", "朋友", "经理"], // Только 2+ символа
+    inanimate: ["电脑", "手机", "苹果", "电影", "问题", "天气"],
+    location: ["学校", "公司", "商店", "北京", "图书馆", "餐厅"],
+    verb: ["吃", "看", "去", "做", "喝", "买", "学习", "讨论", "喜欢"],
+    adj: ["漂亮", "聪明", "重要", "有趣", "困难", "方便"],
+    adv: ["经常", "已经", "正在", "马上", "非常", "特别"],
+    time: ["今天", "昨天", "明天", "周末", "晚上", "早上"]
 };
 
 async function loadLexicon() {
     if (lexicon) return lexicon;
-    
-    // Try to fetch local cedict.txt from GitHub Pages root
     try {
         const response = await fetch('cedict.txt');
         if (response.ok) {
@@ -46,18 +31,17 @@ async function loadLexicon() {
     } catch (e) {
         console.warn("Could not load cedict.txt, using fallback lexicon.");
     }
-    
     lexicon = fallbackLexicon;
     return lexicon;
 }
 
 function parseCedict(text) {
-    const data = { animate: [], inanimate: [], location: [], verb: [], adj: [], adv: [], question_word: [] };
+    const data = { animate: [], inanimate: [], location: [], verb: [], adj: [], adv: [], time: [] };
     
-    const animatePatterns = /\bperson\b|\bpeople\b|\bteacher\b|\bstudent\b|\bdoctor\b|\bchild\b|\bman\b|\bwoman\b|\banimal\b|\bbird\b|\bfish\b|\bdog\b|\bcat\b/i;
-    const locationPatterns = /\bplace\b|\bcity\b|\bcountry\b|\broom\b|\bhouse\b|\bschool\b|\bstore\b|\bhospital\b|\bmountain\b|\briver\b/i;
-    const questionPatterns = /\binterrogative\b|\bwhat\b|\bwho\b|\bwhere\b|\bhow\b|\bwhy\b|\bwhich\b|\bwhen\b/i;
-    
+    const animatePatterns = /\bperson\b|\bpeople\b|\bteacher\b|\bstudent\b|\bdoctor\b|\bchild\b|\bman\b|\bwoman\b|\banimal\b|\bbird\b|\bfish\b|\bdog\b|\bcat\b|\bfriend\b|\bmanager\b/i;
+    const locationPatterns = /\bplace\b|\bcity\b|\bcountry\b|\broom\b|\bhouse\b|\bschool\b|\bstore\b|\bhospital\b|\bmountain\b|\briver\b|\bcompany\b|\brestaurant\b|\blibrary\b/i;
+    const timePatterns = /\btime\b|\bday\b|\byear\b|\bmonth\b|\bweek\b|\bmorning\b|\bevening\b|\bnight\b|\btoday\b|\byesterday\b|\btomorrow\b/i;
+
     const lines = text.split('\n');
     for (const line of lines) {
         if (line.startsWith('#') || !line.trim()) continue;
@@ -67,54 +51,60 @@ function parseCedict(text) {
         const [, trad, simp, pinyin, defs] = match;
         const defsLower = defs.toLowerCase();
         
-        if (simp.length > 4 || simp.length < 1) continue;
+        // Фильтр: только иероглифы, без фамилий и транслитераций
+        if (simp.length < 1 || simp.length > 6) continue;
         if (!/^[\u4e00-\u9fff]+$/.test(simp)) continue;
-        if (defsLower.includes('surname') || defsLower.includes('transliteration')) continue;
-        if (BLACKLIST.has(simp)) continue;
+        if (defsLower.includes('surname') || defsLower.includes('transliteration') || defsLower.includes('abbr')) continue;
         
-        if (questionPatterns.test(defsLower)) data.question_word.push(simp);
-        else if (animatePatterns.test(defsLower)) data.animate.push(simp);
-        else if (locationPatterns.test(defsLower)) data.location.push(simp);
-        else if (/\bverb\b|\bto \w+\b/.test(defsLower)) data.verb.push(simp);
-        else if (/\badj\b|\badjective\b/.test(defsLower)) data.adj.push(simp);
-        else if (/\badv\b|\badverb\b/.test(defsLower)) data.adv.push(simp);
-        else data.inanimate.push(simp);
+        // === КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Для существительных и прилагательных требуем минимум 2 иероглифа ===
+        // Это убивает спам из слов типа "人", "书", "好" и делает предложения взрослее.
+        
+        if (timePatterns.test(defsLower) && simp.length >= 2) {
+            data.time.push(simp);
+        } else if (animatePatterns.test(defsLower) && simp.length >= 2) {
+            data.animate.push(simp);
+        } else if (locationPatterns.test(defsLower) && simp.length >= 2) {
+            data.location.push(simp);
+        } else if (/\badj\b|\badjective\b/.test(defsLower) && simp.length >= 2) {
+            data.adj.push(simp);
+        } else if (/\badv\b|\badverb\b/.test(defsLower)) {
+            data.adv.push(simp); // Наречия могут быть и 1-символьными (很, 都)
+        } else if (/\bverb\b|\bto \w+\b/.test(defsLower)) {
+            data.verb.push(simp); // Глаголы тоже могут быть 1-символьными (吃, 去)
+        } else if (simp.length >= 2) {
+            // Все остальные подходящие слова длиной 2+ символа идут в неодушевленные
+            data.inanimate.push(simp);
+        }
     }
     
+    // Очистка от дубликатов
     for (const key in data) data[key] = [...new Set(data[key])];
     
+    // Fallback, если какие-то категории пусты
     if (!data.animate.length) data.animate = fallbackLexicon.animate;
     if (!data.inanimate.length) data.inanimate = fallbackLexicon.inanimate;
     if (!data.location.length) data.location = fallbackLexicon.location;
     if (!data.verb.length) data.verb = fallbackLexicon.verb;
     if (!data.adj.length) data.adj = fallbackLexicon.adj;
     if (!data.adv.length) data.adv = fallbackLexicon.adv;
-    if (!data.question_word.length) data.question_word = fallbackLexicon.question_word;
+    if (!data.time.length) data.time = fallbackLexicon.time;
     
     return data;
 }
 
 function generateNormalSentence(lex) {
+    // Умные шаблоны с грамматическим "клеем" (времени, наречий, частиц)
     const templates = [
-        ["{animate}{verb}{inanimate}。", ["animate", "verb", "inanimate"]],
-        ["{animate}{verb}{location}。", ["animate", "verb", "location"]],
-        ["{animate}{adv}{verb}{inanimate}。", ["animate", "adv", "verb", "inanimate"]],
-        ["我{verb}{inanimate}。", ["verb", "inanimate"]],
-        ["你{verb}{location}。", ["verb", "location"]],
-        ["{animate}{verb}{adj}{inanimate}。", ["animate", "verb", "adj", "inanimate"]],
-        ["{animate}{verb}{inanimate}吗？", ["animate", "verb", "inanimate"]],
-        ["{animate}{verb}{location}吗？", ["animate", "verb", "location"]],
-        ["你{verb}{inanimate}吗？", ["verb", "inanimate"]],
-        ["你{verb}{location}吗？", ["verb", "location"]],
-        ["{animate}在{verb}什么？", ["animate", "verb"]],
-        ["{animate}{verb}什么{inanimate}？", ["animate", "verb", "inanimate"]],
-        ["谁{verb}{inanimate}？", ["verb", "inanimate"]],
-        ["谁{verb}{location}？", ["verb", "location"]],
-        ["{animate}去{question_word}？", ["animate", "question_word"]],
-        ["{animate}{question_word}{verb}{inanimate}？", ["animate", "question_word", "verb", "inanimate"]],
-        ["{animate}{question_word}{verb}{location}？", ["animate", "question_word", "verb", "location"]],
-        ["{animate}{question_word}去{location}？", ["animate", "question_word", "location"]],
-        ["你{verb}{inanimate}还是{verb}{inanimate}？", ["verb", "inanimate", "verb", "inanimate"]]
+        ["{time}，{animate} 在 {location} {verb}。", ["time", "animate", "location", "verb"]],
+        ["{animate} 经常 {verb} {inanimate}。", ["animate", "verb", "inanimate"]],
+        ["我觉得 {inanimate} 非常 {adj}。", ["inanimate", "adj"]],
+        ["{time} {animate} 打算去 {location} {verb}。", ["time", "animate", "location", "verb"]],
+        ["{animate} 已经 {verb} 了 {inanimate}。", ["animate", "verb", "inanimate"]],
+        ["{location} 的 {inanimate} 很 {adj}。", ["location", "inanimate", "adj"]],
+        ["{animate} 正在 {location} {verb} {inanimate}。", ["animate", "location", "verb", "inanimate"]],
+        ["你 {time} 想 {verb} 什么 {inanimate}？", ["time", "verb", "inanimate"]],
+        ["{animate} 觉得 {location} 怎么样？", ["animate", "location"]],
+        ["{time}，{animate} 和 朋友 一起 {verb}。", ["time", "animate", "verb"]]
     ];
     
     const [tmpl, slots] = templates[Math.floor(Math.random() * templates.length)];
@@ -122,7 +112,8 @@ function generateNormalSentence(lex) {
     
     for (const slot of slots) {
         const list = lex[slot];
-        parts[slot] = list && list.length ? list[Math.floor(Math.random() * list.length)] : "人";
+        // Если список пуст, берем запасной вариант
+        parts[slot] = (list && list.length) ? list[Math.floor(Math.random() * list.length)] : fallbackLexicon[slot][0];
     }
     
     let result = tmpl;
@@ -171,13 +162,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     generateBtn.addEventListener('click', async () => {
         generateBtn.disabled = true;
-        output.textContent = "Loading dictionary and generating...";
+        output.textContent = "Загрузка словаря и генерация...";
         
         const lex = await loadLexicon();
         const mode = document.querySelector('input[name="mode"]:checked').value;
         const count = Math.min(parseInt(document.getElementById('count').value) || 5, 50);
         
-        modeLabel.textContent = `(${mode})`;
+        modeLabel.textContent = `(${mode === 'normal' ? 'normal' : 'absurd'})`;
         
         const sentences = [];
         for (let i = 0; i < count; i++) {
@@ -193,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     copyBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(output.textContent).then(() => {
             const originalText = copyBtn.textContent;
-            copyBtn.textContent = "✅ Copied!";
+            copyBtn.textContent = "✅ Скопировано!";
             setTimeout(() => copyBtn.textContent = originalText, 2000);
         });
     });

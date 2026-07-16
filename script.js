@@ -1,4 +1,4 @@
-// Absurd vocabulary (для режима абсурда)
+// Словарь для режима абсурда (оставляем как есть, пусть угарает)
 const ABSURD_WORDS = {
     noun: ["屁股", "放屁", "狗屁", "王八", "笨蛋", "傻瓜", "混蛋", "夜壶", "马桶", "拖鞋", "臭虫", "蟑螂", "腋窝", "挠痒痒"],
     verb: ["放屁", "拉屎", "撒尿", "打嗝", "吃屎", "喝尿", "放风", "扯淡", "挠痒痒"],
@@ -8,7 +8,7 @@ const ABSURD_WORDS = {
 
 let lexicon = null;
 
-// Чистый, безопасный fallback (HSK 1-3), если словарь не загрузится
+// Безопасный fallback (HSK 1-3)
 const fallbackLexicon = {
     animate: ["学生", "老师", "医生", "朋友", "经理", "孩子", "先生", "小姐", "工人", "司机"],
     inanimate: ["电脑", "手机", "苹果", "电影", "问题", "天气", "衣服", "牛奶", "面包", "照片"],
@@ -38,14 +38,13 @@ async function loadLexicon() {
 function parseCedict(text) {
     const data = { animate: [], inanimate: [], location: [], verb: [], adj: [], adv: [], time: [] };
     
-    // === ФИЛЬТРЫ ДЛЯ ЛЮДЕЙ (чтобы не было птиц и генералов) ===
-    const humanPatterns = /\bperson\b|\bpeople\b|\bteacher\b|\bstudent\b|\bdoctor\b|\bchild\b|\bman\b|\bwoman\b|\bfriend\b|\bmanager\b|\bboy\b|\bgirl\b|\bbaby\b|\bdriver\b|\bworker\b/i;
-    const animalExclude = /\bbird\b|\banimal\b|\bfish\b|\binsect\b|\bcat\b|\bdog\b|\bhorse\b|\bcow\b|\bsheep\b|\bpig\b|\bchicken\b|\bduck\b|\bwarbler\b|\bsandpiper\b|\bape\b|\bmonkey\b|\btiger\b|\blion\b/i;
+    // 1. ТОЛЬКО ЛЮДИ. Никаких животных, птиц и насекомых!
+    const humanPatterns = /\bperson\b|\bpeople\b|\bteacher\b|\bstudent\b|\bdoctor\b|\bchild\b|\bman\b|\bwoman\b|\bfriend\b|\bdriver\b|\bworker\b|\bboy\b|\bgirl\b|\bbaby\b|\bmanager\b/i;
     
-    // === ФИЛЬТРЫ ДЛЯ МЕСТ ===
+    // 2. Жесткий фильтр мусора (птицы, религия, расы, мифы, наука)
+    const excludePatterns = /\bbird\b|\banimal\b|\bfish\b|\binsect\b|\bcat\b|\bdog\b|\bhorse\b|\bcow\b|\bsheep\b|\bpig\b|\bchicken\b|\bduck\b|\bgospel\b|\breligion\b|\brace\b|\bspecies\b|\bmyth\b|\btroposphere\b|\batmosphere\b/i;
+    
     const locationPatterns = /\bplace\b|\bcity\b|\bcountry\b|\broom\b|\bhouse\b|\bschool\b|\bstore\b|\bhospital\b|\bmountain\b|\briver\b|\bcompany\b|\brestaurant\b|\blibrary\b|\bpark\b|\bairport\b|\bbank\b/i;
-    
-    // === ФИЛЬТРЫ ДЛЯ ВРЕМЕНИ ===
     const timePatterns = /\btime\b|\bday\b|\byear\b|\bmonth\b|\bweek\b|\bmorning\b|\bevening\b|\bnight\b|\btoday\b|\byesterday\b|\btomorrow\b|\bnow\b/i;
 
     const lines = text.split('\n');
@@ -57,49 +56,35 @@ function parseCedict(text) {
         const [, trad, simp, pinyin, defs] = match;
         const defsLower = defs.toLowerCase();
         
-        // Базовая чистка: только иероглифы, без фамилий, без транслитераций
-        if (simp.length < 1 || simp.length > 6) continue;
+        // === ЖЕСТКИЙ ФИЛЬТР ДЛИНЫ ===
+        // Максимум 3 иероглифа! Это убивает 99% идиом (成语) и сложных терминов.
+        if (simp.length > 3 || simp.length < 1) continue;
         if (!/^[\u4e00-\u9fff]+$/.test(simp)) continue;
         if (defsLower.includes('surname') || defsLower.includes('transliteration') || defsLower.includes('abbr')) continue;
 
-        // 1. ОДУШЕВЛЕННЫЕ (ТОЛЬКО ЛЮДИ!)
-        // Ищем совпадение с "человеком" И исключаем любых животных/птиц
-        if (humanPatterns.test(defsLower) && !animalExclude.test(defsLower) && simp.length >= 2) {
-            data.animate.push(simp);
-        } 
-        // 2. МЕСТА
-        else if (locationPatterns.test(defsLower) && simp.length >= 2 && simp.length <= 4) {
-            data.location.push(simp);
-        } 
-        // 3. ВРЕМЯ
-        else if (timePatterns.test(defsLower) && simp.length >= 2) {
+        // Отсекаем мусорные дефиниции (птиц, тропосферы и т.д.)
+        if (excludePatterns.test(defsLower)) continue;
+
+        // Распределяем по категориям
+        if (timePatterns.test(defsLower)) {
             data.time.push(simp);
-        } 
-        // 4. ГЛАГОЛЫ (Убиваем идиомы и длинные фразы)
-        else if (/\bverb\b|\bto \w+\b/.test(defsLower) && simp.length <= 3) {
-            // Исключаем специфические глаголы, которые требуют странных объектов
-            if (!defsLower.includes('castrate') && !defsLower.includes('stutter') && !defsLower.includes('urinate')) {
-                data.verb.push(simp);
-            }
-        } 
-        // 5. ПРИЛАГАТЕЛЬНЫЕ (Убиваем идиомы)
-        else if (/\badj\b|\badjective\b/.test(defsLower) && simp.length >= 2 && simp.length <= 3) {
+        } else if (humanPatterns.test(defsLower)) {
+            data.animate.push(simp);
+        } else if (locationPatterns.test(defsLower)) {
+            data.location.push(simp);
+        } else if (/\bverb\b|\bto \w+\b/.test(defsLower) && simp.length <= 2) {
+            data.verb.push(simp);
+        } else if (/\badj\b|\badjective\b/.test(defsLower) && simp.length <= 2) {
             data.adj.push(simp);
-        } 
-        // 6. НАРЕЧИЯ
-        else if (/\badv\b|\badverb\b/.test(defsLower) && simp.length <= 2) {
+        } else if (/\badv\b|\badverb\b/.test(defsLower) && simp.length <= 2) {
             data.adv.push(simp);
-        } 
-        // 7. НЕОДУШЕВЛЕННЫЕ (Убиваем абстракции, идиомы и территории)
-        else if (simp.length >= 2 && simp.length <= 3 && !defsLower.includes('territory') && !defsLower.includes('abstract')) {
+        } else if (simp.length >= 2) {
             data.inanimate.push(simp);
         }
     }
     
-    // Очистка от дубликатов
     for (const key in data) data[key] = [...new Set(data[key])];
     
-    // Fallback, если какие-то категории пусты (из-за жестких фильтров)
     if (!data.animate.length) data.animate = fallbackLexicon.animate;
     if (!data.inanimate.length) data.inanimate = fallbackLexicon.inanimate;
     if (!data.location.length) data.location = fallbackLexicon.location;
@@ -112,7 +97,6 @@ function parseCedict(text) {
 }
 
 function generateNormalSentence(lex) {
-    // Умные шаблоны с грамматическим "клеем"
     const templates = [
         ["{time}，{animate} 在 {location} {verb}。", ["time", "animate", "location", "verb"]],
         ["{animate} 经常 {verb} {inanimate}。", ["animate", "verb", "inanimate"]],
@@ -171,7 +155,6 @@ function makeAbsurd(sentence) {
     return words.join("");
 }
 
-// UI Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generateBtn');
     const copyBtn = document.getElementById('copyBtn');

@@ -11,6 +11,15 @@ const BLACKLIST = new Set([
     "菩萨", "佛祖", "上帝", "天使", "魔鬼", "神仙"
 ]);
 
+// 🛑 Complex/Intransitive Verbs: NEVER let these combine with random nouns!
+// (e.g., "下锅" requires a specific object, "挥舞" is intransitive, "解辣" is specific)
+const complexVerbs = new Set([
+    "下锅", "挥舞", "解辣", "游泳", "洗澡", "睡觉", "起床", "毕业", "辞职", 
+    "道歉", "帮忙", "散步", "聊天", "见面", "分手", "结婚", "离婚", "生病", 
+    "感冒", "咳嗽", "发烧", "呕吐", "晕倒", "死亡", "出生", "存在", "属于", 
+    "变成", "成为", "显得", "好像", "仿佛", "犹如", "等于", "意味着", "包含", "包括"
+]);
+
 // 🤪 Absurd vocabulary for the Absurd Mode
 const ABSURD_WORDS = {
     noun: ["屁股", "放屁", "狗屁", "王八", "笨蛋", "傻瓜", "混蛋", "夜壶", "马桶", "拖鞋", "臭虫", "蟑螂", "腋窝", "挠痒痒"],
@@ -39,7 +48,7 @@ const fallbackLexicon = {
 
 let lexicon = null;
 
-// 🧠 Load and parse the dictionary with SEMANTIC TAGGING
+// 🧠 Load and parse the dictionary with SEMANTIC TAGGING & STRICT FILTERING
 async function loadLexicon() {
     if (lexicon) return lexicon;
     try {
@@ -82,7 +91,8 @@ function parseCedict(text) {
     };
 
     // 🎯 Pattern for ready-made Verb-Object (VO) phrases in CEDICT
-    const voPattern = /to (?:eat|drink|read|watch|listen|play|drive|ride|take|go|do|make|buy|sell|cook|wash|wear|sleep|run|swim|sing|dance|work|study|open|close|clean|fix|build|break|find|lose|send|receive|write|draw|cut|lock|turn|push|pull|throw|catch|hold|carry|lift|drop|hit|kick|boil|fry|bake|mix|stir|pour|fill|empty|sip|chew|swallow|spit|lick|smell|taste|touch|feel|hear|see|look|nod|shake|stretch|yawn|sneeze|cough|cry|laugh|smile|frown|jump|leap|hop|skip|crawl|sneak|march|stroll|wander|hike|climb|descend|dive|float|sink|sail|row|fly|land|crash|bump|scratch|rub|wipe|sweep|mop|dust|iron|fold|hang|dry|wet|soak|rinse|squeeze|spin|twist|bend|smooth|sharpen|shatter|crack|split|tear|rip|slice|chop|grind|crush|smash|pound|hammer|nail|screw|glue|paste|tape|sew|knit|dye|paint|sketch|copy|print|type|erase|delete|remove|add|insert|extract|drag|lower|raise|mount|board|enter|exit|arrive|depart|stay|wait|pause|stop|start|begin|end|finish|complete|continue|repeat|try|test|check|verify|confirm|approve|reject|deny|refuse|accept|agree|argue|discuss|talk|speak|say|tell|ask|answer|reply|shout|whisper|mumble|lie|deceive|trick|steal|borrow|lend|owe|pay|spend|save|waste|win|lose) (?:a |the |some )?(?:meal|water|book|tv|music|ball|car|bus|work|school|home|bath|hair|face|clothes|food|tea|coffee|rice|fruit|shower|nap|door|window|light|computer|phone|table|chair|bed|floor|wall|room|house|building|street|road|path|bridge|river|lake|sea|ocean|mountain|hill|forest|tree|flower|grass|leaf|branch|root|seed|vegetable|meat|fish|egg|milk|cheese|bread|cake|cookie|candy|chocolate|sugar|salt|pepper|oil|butter|sauce|soup|salad|sandwich|pizza|burger|fries|noodle|pasta|bean|corn|potato|tomato|onion|garlic|ginger|carrot|cabbage|lettuce|spinach|apple|banana|orange|grape|strawberry|blueberry|peach|pear|plum|cherry|lemon|lime|melon|watermelon|pineapple|coconut|mango|papaya|avocado|nut|almond|walnut|peanut|cashew|pistachio|wheat|oat|barley|rye|millet|quinoa|buckwheat|chia|flax|hemp|sunflower|pumpkin|sesame|poppy|mustard|cumin|coriander|fennel|anise|cardamom|cinnamon|clove|nutmeg|mace|vanilla|saffron|turmeric|paprika|chili|honey|syrup|molasses|jam|jelly|margarine|vinegar|soy|ketchup|mayo|dressing|gravy|broth|stock|stew|chili|curry|stir.?fry|gum|mint|lozenge|pill|tablet|capsule|medicine|drug|vitamin|supplement|herb|spice|seasoning|flavor|taste|smell|aroma|scent|perfume|cologne|soap|shampoo|conditioner|lotion|cream|ointment|gel|powder|spray|deodorant|makeup|cosmetic|lipstick|mascara|eyeliner|eyeshadow|blush|foundation|concealer|brush|sponge|mirror|comb|razor|shaver|scissors|clipper|nail|file|buffer|polish|remover|tweezer|cotton|swab|tissue|paper|napkin|towel|cloth|rag|broom|mop|bucket|bin|trash|garbage|recycle|compost|waste|sewage|drain|pipe|tube|hose|wire|cable|cord|rope|string|thread|yarn|fabric|textile|leather|fur|wool|silk|linen|polyester|nylon|spandex|rayon|acrylic|velvet|suede|denim|canvas|rubber|plastic|glass|metal|wood|stone|rock|sand|dirt|soil|clay|mud|concrete|cement|brick|tile|marble|granite|slate|chalk|coal|gas|fuel|energy|power|electricity|battery|generator|motor|engine|machine|tool|device|gadget|appliance|instrument|equipment|gear|kit|set|pack|bag|box|case|container|jar|bottle|can|cup|glass|mug|bowl|plate|dish|saucer|tray|pan|pot|skillet|wok|oven|stove|microwave|fridge|freezer|sink|faucet|tap|shower|tub|toilet|bidet|urinal)/i;
+    // Matches definitions like "to eat a meal", "to read a book", "to go home"
+    const voPattern = /to (?:eat|drink|read|watch|listen|play|drive|ride|take|go|do|make|buy|sell|cook|wash|wear|sleep|run|swim|sing|dance|work|study) (?:a |the )?(?:meal|water|book|tv|music|ball|car|bus|work|school|home|bath|hair|face|clothes|food|tea|coffee|rice|fruit|door|window|computer|phone|table|chair|bed|room|house|street|road|tree|flower|vegetable|meat|fish|egg|milk|bread|cake|soup|apple|banana|orange|grape|nut|soap|towel|paper|bottle|cup|bowl|plate|pan|pot|oven|sink|shower|toilet)/i;
 
     const questionPatterns = /\binterrogative\b|\bwhat\b|\bwho\b|\bwhere\b|\bhow\b|\bwhy\b|\bwhich\b|\bwhen\b/i;
 
@@ -103,8 +113,11 @@ function parseCedict(text) {
         if (defsLower.includes('surname') || defsLower.includes('transliteration')) continue;
         if (BLACKLIST.has(simp)) continue;
         
-        // 🚫 KILL THE WEIRD STUFF: Idioms, proverbs, rare species, archaic/literary words
-        if (/\(idiom\)|\(proverb\)|\(literary\)|\(archaic\)|bird species|animal species|plant species|fish species|insect species|zoology|botany|anatomy|pathology|chemistry|physics|mathematics/i.test(defsLower)) continue;
+        // 🛑 KILL COMPLEX/INTRANSITIVE VERBS (The "下锅/挥舞" killers)
+        if (complexVerbs.has(simp)) continue;
+
+        // 🚫 KILL THE WEIRD STUFF: Idioms, proverbs, rare species, archaic/literary words, variants
+        if (/\(idiom\)|\(proverb\)|\(literary\)|\(archaic\)|bird species|animal species|plant species|fish species|insect species|zoology|botany|anatomy|pathology|chemistry|physics|mathematics|variant of|see also|abbr\. for/i.test(defsLower)) continue;
 
         // 1️⃣ Populate semantic categories
         for (const tag in semanticTags) {

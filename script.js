@@ -1,4 +1,4 @@
-// Absurd vocabulary (остается для режима абсурда)
+// Absurd vocabulary (для режима абсурда)
 const ABSURD_WORDS = {
     noun: ["屁股", "放屁", "狗屁", "王八", "笨蛋", "傻瓜", "混蛋", "夜壶", "马桶", "拖鞋", "臭虫", "蟑螂", "腋窝", "挠痒痒"],
     verb: ["放屁", "拉屎", "撒尿", "打嗝", "吃屎", "喝尿", "放风", "扯淡", "挠痒痒"],
@@ -8,15 +8,15 @@ const ABSURD_WORDS = {
 
 let lexicon = null;
 
-// Базовый набор, если cedict.txt не загрузится
+// Чистый, безопасный fallback (HSK 1-3), если словарь не загрузится
 const fallbackLexicon = {
-    animate: ["学生", "老师", "医生", "朋友", "经理"], // Только 2+ символа
-    inanimate: ["电脑", "手机", "苹果", "电影", "问题", "天气"],
-    location: ["学校", "公司", "商店", "北京", "图书馆", "餐厅"],
-    verb: ["吃", "看", "去", "做", "喝", "买", "学习", "讨论", "喜欢"],
-    adj: ["漂亮", "聪明", "重要", "有趣", "困难", "方便"],
-    adv: ["经常", "已经", "正在", "马上", "非常", "特别"],
-    time: ["今天", "昨天", "明天", "周末", "晚上", "早上"]
+    animate: ["学生", "老师", "医生", "朋友", "经理", "孩子", "先生", "小姐", "工人", "司机"],
+    inanimate: ["电脑", "手机", "苹果", "电影", "问题", "天气", "衣服", "牛奶", "面包", "照片"],
+    location: ["学校", "公司", "商店", "北京", "图书馆", "餐厅", "医院", "机场", "银行", "公园"],
+    verb: ["吃", "看", "去", "做", "喝", "买", "学习", "讨论", "喜欢", "准备", "介绍", "打扫"],
+    adj: ["漂亮", "聪明", "重要", "有趣", "困难", "方便", "干净", "便宜", "新鲜", "热闹"],
+    adv: ["经常", "已经", "正在", "马上", "非常", "特别", "一起", "都", "也", "最"],
+    time: ["今天", "昨天", "明天", "周末", "晚上", "早上", "现在", "上午", "下午", "去年"]
 };
 
 async function loadLexicon() {
@@ -38,9 +38,15 @@ async function loadLexicon() {
 function parseCedict(text) {
     const data = { animate: [], inanimate: [], location: [], verb: [], adj: [], adv: [], time: [] };
     
-    const animatePatterns = /\bperson\b|\bpeople\b|\bteacher\b|\bstudent\b|\bdoctor\b|\bchild\b|\bman\b|\bwoman\b|\banimal\b|\bbird\b|\bfish\b|\bdog\b|\bcat\b|\bfriend\b|\bmanager\b/i;
-    const locationPatterns = /\bplace\b|\bcity\b|\bcountry\b|\broom\b|\bhouse\b|\bschool\b|\bstore\b|\bhospital\b|\bmountain\b|\briver\b|\bcompany\b|\brestaurant\b|\blibrary\b/i;
-    const timePatterns = /\btime\b|\bday\b|\byear\b|\bmonth\b|\bweek\b|\bmorning\b|\bevening\b|\bnight\b|\btoday\b|\byesterday\b|\btomorrow\b/i;
+    // === ФИЛЬТРЫ ДЛЯ ЛЮДЕЙ (чтобы не было птиц и генералов) ===
+    const humanPatterns = /\bperson\b|\bpeople\b|\bteacher\b|\bstudent\b|\bdoctor\b|\bchild\b|\bman\b|\bwoman\b|\bfriend\b|\bmanager\b|\bboy\b|\bgirl\b|\bbaby\b|\bdriver\b|\bworker\b/i;
+    const animalExclude = /\bbird\b|\banimal\b|\bfish\b|\binsect\b|\bcat\b|\bdog\b|\bhorse\b|\bcow\b|\bsheep\b|\bpig\b|\bchicken\b|\bduck\b|\bwarbler\b|\bsandpiper\b|\bape\b|\bmonkey\b|\btiger\b|\blion\b/i;
+    
+    // === ФИЛЬТРЫ ДЛЯ МЕСТ ===
+    const locationPatterns = /\bplace\b|\bcity\b|\bcountry\b|\broom\b|\bhouse\b|\bschool\b|\bstore\b|\bhospital\b|\bmountain\b|\briver\b|\bcompany\b|\brestaurant\b|\blibrary\b|\bpark\b|\bairport\b|\bbank\b/i;
+    
+    // === ФИЛЬТРЫ ДЛЯ ВРЕМЕНИ ===
+    const timePatterns = /\btime\b|\bday\b|\byear\b|\bmonth\b|\bweek\b|\bmorning\b|\bevening\b|\bnight\b|\btoday\b|\byesterday\b|\btomorrow\b|\bnow\b/i;
 
     const lines = text.split('\n');
     for (const line of lines) {
@@ -51,28 +57,41 @@ function parseCedict(text) {
         const [, trad, simp, pinyin, defs] = match;
         const defsLower = defs.toLowerCase();
         
-        // Фильтр: только иероглифы, без фамилий и транслитераций
+        // Базовая чистка: только иероглифы, без фамилий, без транслитераций
         if (simp.length < 1 || simp.length > 6) continue;
         if (!/^[\u4e00-\u9fff]+$/.test(simp)) continue;
         if (defsLower.includes('surname') || defsLower.includes('transliteration') || defsLower.includes('abbr')) continue;
-        
-        // === КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Для существительных и прилагательных требуем минимум 2 иероглифа ===
-        // Это убивает спам из слов типа "人", "书", "好" и делает предложения взрослее.
-        
-        if (timePatterns.test(defsLower) && simp.length >= 2) {
-            data.time.push(simp);
-        } else if (animatePatterns.test(defsLower) && simp.length >= 2) {
+
+        // 1. ОДУШЕВЛЕННЫЕ (ТОЛЬКО ЛЮДИ!)
+        // Ищем совпадение с "человеком" И исключаем любых животных/птиц
+        if (humanPatterns.test(defsLower) && !animalExclude.test(defsLower) && simp.length >= 2) {
             data.animate.push(simp);
-        } else if (locationPatterns.test(defsLower) && simp.length >= 2) {
+        } 
+        // 2. МЕСТА
+        else if (locationPatterns.test(defsLower) && simp.length >= 2 && simp.length <= 4) {
             data.location.push(simp);
-        } else if (/\badj\b|\badjective\b/.test(defsLower) && simp.length >= 2) {
+        } 
+        // 3. ВРЕМЯ
+        else if (timePatterns.test(defsLower) && simp.length >= 2) {
+            data.time.push(simp);
+        } 
+        // 4. ГЛАГОЛЫ (Убиваем идиомы и длинные фразы)
+        else if (/\bverb\b|\bto \w+\b/.test(defsLower) && simp.length <= 3) {
+            // Исключаем специфические глаголы, которые требуют странных объектов
+            if (!defsLower.includes('castrate') && !defsLower.includes('stutter') && !defsLower.includes('urinate')) {
+                data.verb.push(simp);
+            }
+        } 
+        // 5. ПРИЛАГАТЕЛЬНЫЕ (Убиваем идиомы)
+        else if (/\badj\b|\badjective\b/.test(defsLower) && simp.length >= 2 && simp.length <= 3) {
             data.adj.push(simp);
-        } else if (/\badv\b|\badverb\b/.test(defsLower)) {
-            data.adv.push(simp); // Наречия могут быть и 1-символьными (很, 都)
-        } else if (/\bverb\b|\bto \w+\b/.test(defsLower)) {
-            data.verb.push(simp); // Глаголы тоже могут быть 1-символьными (吃, 去)
-        } else if (simp.length >= 2) {
-            // Все остальные подходящие слова длиной 2+ символа идут в неодушевленные
+        } 
+        // 6. НАРЕЧИЯ
+        else if (/\badv\b|\badverb\b/.test(defsLower) && simp.length <= 2) {
+            data.adv.push(simp);
+        } 
+        // 7. НЕОДУШЕВЛЕННЫЕ (Убиваем абстракции, идиомы и территории)
+        else if (simp.length >= 2 && simp.length <= 3 && !defsLower.includes('territory') && !defsLower.includes('abstract')) {
             data.inanimate.push(simp);
         }
     }
@@ -80,7 +99,7 @@ function parseCedict(text) {
     // Очистка от дубликатов
     for (const key in data) data[key] = [...new Set(data[key])];
     
-    // Fallback, если какие-то категории пусты
+    // Fallback, если какие-то категории пусты (из-за жестких фильтров)
     if (!data.animate.length) data.animate = fallbackLexicon.animate;
     if (!data.inanimate.length) data.inanimate = fallbackLexicon.inanimate;
     if (!data.location.length) data.location = fallbackLexicon.location;
@@ -93,7 +112,7 @@ function parseCedict(text) {
 }
 
 function generateNormalSentence(lex) {
-    // Умные шаблоны с грамматическим "клеем" (времени, наречий, частиц)
+    // Умные шаблоны с грамматическим "клеем"
     const templates = [
         ["{time}，{animate} 在 {location} {verb}。", ["time", "animate", "location", "verb"]],
         ["{animate} 经常 {verb} {inanimate}。", ["animate", "verb", "inanimate"]],
@@ -112,7 +131,6 @@ function generateNormalSentence(lex) {
     
     for (const slot of slots) {
         const list = lex[slot];
-        // Если список пуст, берем запасной вариант
         parts[slot] = (list && list.length) ? list[Math.floor(Math.random() * list.length)] : fallbackLexicon[slot][0];
     }
     

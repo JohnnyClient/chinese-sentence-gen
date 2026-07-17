@@ -1,4 +1,4 @@
-// Absurd vocabulary
+// Словарь абсурдных слов
 const ABSURD_WORDS = {
     noun: ["屁股", "放屁", "狗屁", "王八", "笨蛋", "傻瓜", "混蛋", "夜壶", "马桶", "拖鞋", "臭虫", "蟑螂", "腋窝", "挠痒痒"],
     verb: ["放屁", "拉屎", "撒尿", "打嗝", "吃屎", "喝尿", "放风", "扯淡", "挠痒痒"],
@@ -149,33 +149,35 @@ function makeAbsurd(sentence) {
     return words.join("");
 }
 
-// UI Logic
+// --- ЛОГИКА ИНТЕРФЕЙСА ---
 document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generateBtn');
     const copyCombinedBtn = document.getElementById('copyCombinedBtn');
     const normalOutput = document.getElementById('normalOutput');
     const absurdOutput = document.getElementById('absurdOutput');
 
-    // 1. Генерация (строго 50/50)
+    // 1. Генерация (АБСОЛЮТНО НЕЗАВИСИМЫЕ ДРУГ ОТ ДРУГА ПРЕДЛОЖЕНИЯ)
     generateBtn.addEventListener('click', async () => {
         generateBtn.disabled = true;
-        normalOutput.textContent = "Loading dictionary...";
-        absurdOutput.textContent = "Loading dictionary...";
+        normalOutput.textContent = "Загрузка словаря...";
+        absurdOutput.textContent = "Загрузка словаря...";
         
         const lex = await loadLexicon();
         let totalCount = parseInt(document.getElementById('count').value) || 10;
-        
-        // Округляем до четного, чтобы было ровно 50/50
-        totalCount = Math.ceil(totalCount / 2) * 2;
+        totalCount = Math.ceil(totalCount / 2) * 2; // Округляем до четного
         const halfCount = totalCount / 2;
         
         generatedNormal = [];
         generatedAbsurd = [];
         
         for (let i = 0; i < halfCount; i++) {
-            let normal = generateNormalSentence(lex);
-            generatedNormal.push(normal);
-            generatedAbsurd.push(makeAbsurd(normal));
+            // Левое окно: генерируем независимое нормальное предложение
+            generatedNormal.push(generateNormalSentence(lex));
+            
+            // Правое окно: генерируем НЕЗАВИСИМОЕ абсурдное предложение
+            // (Сначала рандомно создается база, потом она абсурдизируется)
+            let absurdBase = generateNormalSentence(lex);
+            generatedAbsurd.push(makeAbsurd(absurdBase));
         }
         
         normalOutput.textContent = generatedNormal.join('\n');
@@ -183,41 +185,51 @@ document.addEventListener('DOMContentLoaded', () => {
         generateBtn.disabled = false;
     });
 
-    // 2. Копирование только Normal или только Absurd
+    // Вспомогательная функция для копирования БЕЗ переносов строк
+    function copyToClipboard(text) {
+        // Убираем все переносы строк, чтобы текст шел сплошным потоком
+        const cleanText = text.replace(/\n/g, ''); 
+        navigator.clipboard.writeText(cleanText).then(() => {
+            return true;
+        }).catch(err => {
+            console.error('Ошибка копирования:', err);
+            return false;
+        });
+    }
+
+    // 2. Копирование только Normal или только Absurd (без переносов)
     document.querySelectorAll('.copy-single').forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.getAttribute('data-target');
             const text = target === 'normal' ? generatedNormal.join('\n') : generatedAbsurd.join('\n');
-            if (!text) return alert("Generate sentences first!");
+            if (!text) return alert("Сначала сгенерируйте предложения!");
             
-            navigator.clipboard.writeText(text).then(() => {
-                const orig = btn.textContent;
-                btn.textContent = "✅ Copied!";
-                setTimeout(() => btn.textContent = orig, 2000);
-            });
+            copyToClipboard(text);
+            const orig = btn.textContent;
+            btn.textContent = "✅ Скопировано!";
+            setTimeout(() => btn.textContent = orig, 2000);
         });
     });
 
-    // 3. Умное комбинированное копирование (50/50)
+    // 3. Умное комбинированное копирование 50/50 (без переносов)
     copyCombinedBtn.addEventListener('click', () => {
-        if (generatedNormal.length === 0) return alert("Generate sentences first!");
+        if (generatedNormal.length === 0) return alert("Сначала сгенерируйте предложения!");
         
         let copyNum = parseInt(document.getElementById('copyCount').value) || 10;
         const maxAvailable = generatedNormal.length * 2;
         
         if (copyNum > maxAvailable) {
-            alert(`Only ${maxAvailable} sentences available! Adjusting to maximum...`);
+            alert(`Доступно только ${maxAvailable} предложений! Берем максимум...`);
             copyNum = maxAvailable;
         }
         
-        // Считаем сколько брать из каждого (если нечетное, то Normal берет на 1 больше)
         const halfCopy = Math.floor(copyNum / 2);
         const normalExtra = copyNum % 2; 
         
         const normalToCopy = generatedNormal.slice(0, halfCopy + normalExtra);
         const absurdToCopy = generatedAbsurd.slice(0, halfCopy);
         
-        // Чередуем их (Normal, Absurd, Normal, Absurd...)
+        // Чередование
         const combined = [];
         const maxLen = Math.max(normalToCopy.length, absurdToCopy.length);
         for (let i = 0; i < maxLen; i++) {
@@ -225,10 +237,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (i < absurdToCopy.length) combined.push(absurdToCopy[i]);
         }
         
-        navigator.clipboard.writeText(combined.join('\n')).then(() => {
-            const orig = copyCombinedBtn.textContent;
-            copyCombinedBtn.textContent = "✅ Copied 50/50!";
-            setTimeout(() => copyCombinedBtn.textContent = orig, 2000);
-        });
+        copyToClipboard(combined.join('\n'));
+        const orig = copyCombinedBtn.textContent;
+        copyCombinedBtn.textContent = "✅ Скопировано 50/50!";
+        setTimeout(() => copyCombinedBtn.textContent = orig, 2000);
     });
 });

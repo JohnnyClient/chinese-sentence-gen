@@ -1,3 +1,4 @@
+// Absurd vocabulary
 const ABSURD_WORDS = {
     noun: ["屁股", "放屁", "狗屁", "王八", "笨蛋", "傻瓜", "混蛋", "夜壶", "马桶", "拖鞋", "臭虫", "蟑螂", "腋窝", "挠痒痒"],
     verb: ["放屁", "拉屎", "撒尿", "打嗝", "吃屎", "喝尿", "放风", "扯淡", "挠痒痒"],
@@ -18,7 +19,9 @@ const BLACKLIST = new Set([
 ]);
 
 let lexicon = null;
-// Fallback mini-dictionary
+let generatedNormal = [];
+let generatedAbsurd = [];
+
 const fallbackLexicon = {
     animate: ["人", "学生", "老师", "猫", "狗", "鸟"],
     inanimate: ["书", "东西", "水", "苹果", "车"],
@@ -38,7 +41,9 @@ async function loadLexicon() {
             lexicon = parseCedict(text);
             return lexicon;
         }
-    } catch (e) { console.warn("Using fallback lexicon."); }
+    } catch (e) {
+        console.warn("Could not load cedict.txt, using fallback lexicon.");
+    }
     lexicon = fallbackLexicon;
     return lexicon;
 }
@@ -54,8 +59,9 @@ function parseCedict(text) {
         if (line.startsWith('#') || !line.trim()) continue;
         const match = line.match(/^(.+?)\s+(.+?)\s+\[(.+?)\]\s+\/(.+)\//);
         if (!match) continue;
-        const [, trad, simp, pinyin, defs] = match;
+        const [, , simp, , defs] = match;
         const defsLower = defs.toLowerCase();
+        
         if (simp.length > 4 || simp.length < 1) continue;
         if (!/^[\u4e00-\u9fff]+$/.test(simp)) continue;
         if (defsLower.includes('surname') || defsLower.includes('transliteration')) continue;
@@ -69,6 +75,7 @@ function parseCedict(text) {
         else if (/\badv\b|\badverb\b/.test(defsLower)) data.adv.push(simp);
         else data.inanimate.push(simp);
     }
+    
     for (const key in data) data[key] = [...new Set(data[key])];
     if (!data.animate.length) data.animate = fallbackLexicon.animate;
     if (!data.inanimate.length) data.inanimate = fallbackLexicon.inanimate;
@@ -77,6 +84,7 @@ function parseCedict(text) {
     if (!data.adj.length) data.adj = fallbackLexicon.adj;
     if (!data.adv.length) data.adv = fallbackLexicon.adv;
     if (!data.question_word.length) data.question_word = fallbackLexicon.question_word;
+    
     return data;
 }
 
@@ -102,6 +110,7 @@ function generateNormalSentence(lex) {
         ["{animate}{question_word}去{location}？", ["animate", "question_word", "location"]],
         ["你{verb}{inanimate}还是{verb}{inanimate}？", ["verb", "inanimate", "verb", "inanimate"]]
     ];
+    
     const [tmpl, slots] = templates[Math.floor(Math.random() * templates.length)];
     const parts = {};
     for (const slot of slots) {
@@ -122,6 +131,7 @@ function makeAbsurd(sentence) {
         const absurdWord = ABSURD_WORDS[category][Math.floor(Math.random() * ABSURD_WORDS[category].length)];
         const positions = ["start", "middle", "end"];
         const position = positions[Math.floor(Math.random() * positions.length)];
+        
         if (position === "start") {
             if (category === "exclamation") words.unshift(absurdWord + "，");
             else words.unshift(absurdWord);
@@ -139,61 +149,86 @@ function makeAbsurd(sentence) {
     return words.join("");
 }
 
-// Global storage for generated sentences
-let currentNormalSentences = [];
-let currentAbsurdSentences = [];
-
+// UI Logic
 document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generateBtn');
-    const smartCopyBtn = document.getElementById('smartCopyBtn');
-    const outputNormal = document.getElementById('outputNormal');
-    const outputAbsurd = document.getElementById('outputAbsurd');
-    
+    const copyCombinedBtn = document.getElementById('copyCombinedBtn');
+    const normalOutput = document.getElementById('normalOutput');
+    const absurdOutput = document.getElementById('absurdOutput');
+
+    // 1. Генерация (строго 50/50)
     generateBtn.addEventListener('click', async () => {
         generateBtn.disabled = true;
-        outputNormal.textContent = "Loading...";
-        outputAbsurd.textContent = "Loading...";
+        normalOutput.textContent = "Loading dictionary...";
+        absurdOutput.textContent = "Loading dictionary...";
         
         const lex = await loadLexicon();
-        // Generating a batch of 50 for each side to have variety
-        currentNormalSentences = [];
-        currentAbsurdSentences = [];
+        let totalCount = parseInt(document.getElementById('count').value) || 10;
         
-        for (let i = 0; i < 50; i++) {
-            let s = generateNormalSentence(lex);
-            currentNormalSentences.push(s);
-            currentAbsurdSentences.push(makeAbsurd(s));
+        // Округляем до четного, чтобы было ровно 50/50
+        totalCount = Math.ceil(totalCount / 2) * 2;
+        const halfCount = totalCount / 2;
+        
+        generatedNormal = [];
+        generatedAbsurd = [];
+        
+        for (let i = 0; i < halfCount; i++) {
+            let normal = generateNormalSentence(lex);
+            generatedNormal.push(normal);
+            generatedAbsurd.push(makeAbsurd(normal));
         }
         
-        outputNormal.textContent = currentNormalSentences.slice(0, 10).join('\n') + "\n... (more generated)";
-        outputAbsurd.textContent = currentAbsurdSentences.slice(0, 10).join('\n') + "\n... (more generated)";
+        normalOutput.textContent = generatedNormal.join('\n');
+        absurdOutput.textContent = generatedAbsurd.join('\n');
         generateBtn.disabled = false;
     });
-    
-    smartCopyBtn.addEventListener('click', () => {
-        const total = parseInt(document.getElementById('copyCount').value) || 10;
-        const half = Math.floor(total / 2);
-        const remainder = total % 2;
+
+    // 2. Копирование только Normal или только Absurd
+    document.querySelectorAll('.copy-single').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.getAttribute('data-target');
+            const text = target === 'normal' ? generatedNormal.join('\n') : generatedAbsurd.join('\n');
+            if (!text) return alert("Generate sentences first!");
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = "✅ Copied!";
+                setTimeout(() => btn.textContent = orig, 2000);
+            });
+        });
+    });
+
+    // 3. Умное комбинированное копирование (50/50)
+    copyCombinedBtn.addEventListener('click', () => {
+        if (generatedNormal.length === 0) return alert("Generate sentences first!");
         
-        // Shuffle arrays to get random ones
-        const shuffledNormal = [...currentNormalSentences].sort(() => 0.5 - Math.random());
-        const shuffledAbsurd = [...currentAbsurdSentences].sort(() => 0.5 - Math.random());
+        let copyNum = parseInt(document.getElementById('copyCount').value) || 10;
+        const maxAvailable = generatedNormal.length * 2;
         
-        let finalList = [];
+        if (copyNum > maxAvailable) {
+            alert(`Only ${maxAvailable} sentences available! Adjusting to maximum...`);
+            copyNum = maxAvailable;
+        }
         
-        // Add normals
-        finalList.push(...shuffledNormal.slice(0, half));
-        // Add absurds
-        finalList.push(...shuffledAbsurd.slice(0, half + remainder));
+        // Считаем сколько брать из каждого (если нечетное, то Normal берет на 1 больше)
+        const halfCopy = Math.floor(copyNum / 2);
+        const normalExtra = copyNum % 2; 
         
-        // Final shuffle to mix them up
-        finalList.sort(() => 0.5 - Math.random());
+        const normalToCopy = generatedNormal.slice(0, halfCopy + normalExtra);
+        const absurdToCopy = generatedAbsurd.slice(0, halfCopy);
         
-        const textToCopy = finalList.join('\n');
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            const originalText = smartCopyBtn.textContent;
-            smartCopyBtn.textContent = `✅ Copied ${total} sentences!`;
-            setTimeout(() => smartCopyBtn.textContent = originalText, 2000);
+        // Чередуем их (Normal, Absurd, Normal, Absurd...)
+        const combined = [];
+        const maxLen = Math.max(normalToCopy.length, absurdToCopy.length);
+        for (let i = 0; i < maxLen; i++) {
+            if (i < normalToCopy.length) combined.push(normalToCopy[i]);
+            if (i < absurdToCopy.length) combined.push(absurdToCopy[i]);
+        }
+        
+        navigator.clipboard.writeText(combined.join('\n')).then(() => {
+            const orig = copyCombinedBtn.textContent;
+            copyCombinedBtn.textContent = "✅ Copied 50/50!";
+            setTimeout(() => copyCombinedBtn.textContent = orig, 2000);
         });
     });
 });

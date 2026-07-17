@@ -3,35 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chinese Sentence Generator</title>
+    <title>Chinese Dual-Mode Generator</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
-        h1 { text-align: center; }
-        .controls, .result { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        label { margin-right: 15px; cursor: pointer; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: #fff; border: none; border-radius: 5px; }
-        button:hover { background: #0056b3; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; min-height: 100px; font-size: 18px; line-height: 1.6; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1000px; margin: 20px auto; padding: 20px; background: #f0f2f5; }
+        h1 { text-align: center; color: #333; }
+        
+        .controls { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+        
+        .panel { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        .panel-header { font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .normal-header { color: #2ecc71; }
+        .absurd-header { color: #e74c3c; }
+        
+        pre { background: #f8f9fa; padding: 15px; border-radius: 8px; white-space: pre-wrap; word-wrap: break-word; min-height: 200px; font-size: 18px; line-height: 1.6; flex-grow: 1; border: 1px solid #eee; }
+        
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; border: none; border-radius: 8px; transition: transform 0.1s; font-weight: bold; }
+        button:active { transform: scale(0.98); }
+        
+        .btn-gen { background: #3498db; color: white; width: 100%; }
+        .btn-copy { background: #9b59b6; color: white; margin-top: 10px; }
+        .btn-copy:hover { background: #8e44ad; }
+        
+        input[type="number"] { padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 60px; text-align: center; }
+        label { font-weight: 500; }
     </style>
 </head>
 <body>
 
-    <h1>🀄 Chinese Sentence Generator</h1>
+    <h1>🀄 Chinese Dual-Generator</h1>
 
     <div class="controls">
-        <label><input type="radio" name="mode" value="normal" checked> Normal Mode</label>
-        <label><input type="radio" name="mode" value="absurd"> Absurd Mode</label>
-        <br><br>
-        <label>Number of sentences: <input type="number" id="count" value="5" min="1" max="50" style="width: 60px;"></label>
-        <br><br>
-        <button id="generateBtn">🎲 Generate Sentences</button>
+        <label>Total sentences to copy: <input type="number" id="copyCount" value="10" min="1" max="100"></label>
+        <button class="btn-gen" id="generateBtn">🎲 Generate Both Modes</button>
     </div>
 
-    <div class="result">
-        <h3>Result <span id="modeLabel" style="color: #666; font-weight: normal;">(normal)</span></h3>
-        <pre id="output">Click "Generate" to start...</pre>
-        <button id="copyBtn">📋 Copy All</button>
+    <div class="container">
+        <!-- Normal Mode -->
+        <div class="panel">
+            <div class="panel-header normal-header">✨ Normal Mode</div>
+            <pre id="outputNormal">Click generate...</pre>
+        </div>
+
+        <!-- Absurd Mode -->
+        <div class="panel">
+            <div class="panel-header absurd-header">🤪 Absurd Mode</div>
+            <pre id="outputAbsurd">Click generate...</pre>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 20px;">
+        <button class="btn-copy" id="smartCopyBtn">📋 Smart Copy (50/50 Mix)</button>
     </div>
 
     <script src="script.js"></script>

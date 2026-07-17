@@ -3,88 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🀄 Chinese Sentence Generator</title>
+    <title>Chinese Sentence Generator</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
-            background-color: #f4f4f9;
-            color: #333;
-        }
-        h1 { text-align: center; color: #2c3e50; }
-        .controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        label { font-weight: bold; }
-        input[type="number"] {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            width: 60px;
-            text-align: center;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            background-color: #3498db;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        button:hover { background-color: #2980b9; }
-        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
-        .mode-selector {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        #output {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            min-height: 200px;
-            white-space: pre-wrap;
-            font-size: 18px;
-            line-height: 1.6;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .copy-btn {
-            background-color: #27ae60;
-            margin-top: 10px;
-            width: 100%;
-        }
-        .copy-btn:hover { background-color: #219150; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
+        h1 { text-align: center; }
+        .controls, .result { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        label { margin-right: 15px; cursor: pointer; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: #fff; border: none; border-radius: 5px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; min-height: 100px; font-size: 18px; line-height: 1.6; }
     </style>
 </head>
 <body>
+
     <h1>🀄 Chinese Sentence Generator</h1>
-    
+
     <div class="controls">
-        <div class="mode-selector">
-            <label><input type="radio" name="mode" value="normal" checked> Normal Mode</label>
-            <label><input type="radio" name="mode" value="absurd"> Absurd Mode</label>
-        </div>
-        <div>
-            <label for="count">Number of sentences:</label>
-            <input type="number" id="count" value="5" min="1" max="50">
-        </div>
+        <label><input type="radio" name="mode" value="normal" checked> Normal Mode</label>
+        <label><input type="radio" name="mode" value="absurd"> Absurd Mode</label>
+        <br><br>
+        <label>Number of sentences: <input type="number" id="count" value="5" min="1" max="50" style="width: 60px;"></label>
+        <br><br>
         <button id="generateBtn">🎲 Generate Sentences</button>
     </div>
 
-    <div id="modeLabel" style="text-align: center; color: #7f8c8d; margin-bottom: 10px;">(normal)</div>
-    
-    <div id="output">Click "Generate" to start...</div>
-    <button id="copyBtn" class="copy-btn">📋 Copy All</button>
+    <div class="result">
+        <h3>Result <span id="modeLabel" style="color: #666; font-weight: normal;">(normal)</span></h3>
+        <pre id="output">Click "Generate" to start...</pre>
+        <button id="copyBtn">📋 Copy All</button>
+    </div>
 
     <script src="script.js"></script>
 </body>

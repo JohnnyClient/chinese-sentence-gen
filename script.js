@@ -1,4 +1,3 @@
-// Absurd vocabulary (Chinese words)
 const ABSURD_WORDS = {
     noun: ["屁股", "放屁", "狗屁", "王八", "笨蛋", "傻瓜", "混蛋", "夜壶", "马桶", "拖鞋", "臭虫", "蟑螂", "腋窝", "挠痒痒"],
     verb: ["放屁", "拉屎", "撒尿", "打嗝", "吃屎", "喝尿", "放风", "扯淡", "挠痒痒"],
@@ -6,7 +5,6 @@ const ABSURD_WORDS = {
     adj: ["傻逼", "牛逼", "变态", "恶心", "臭", "脏", "丑", "奇葩"]
 };
 
-// Words to exclude from generation
 const BLACKLIST = new Set([
     "副词", "名词", "动词", "形容词", "状语", "定语", "主语", "谓语", "宾语", "补语",
     "语法", "词性", "词类", "句子", "短语", "词汇", "语言", "文字", "汉字",
@@ -20,8 +18,7 @@ const BLACKLIST = new Set([
 ]);
 
 let lexicon = null;
-
-// Fallback mini-dictionary in case cedict.txt is not found in the repo
+// Fallback mini-dictionary
 const fallbackLexicon = {
     animate: ["人", "学生", "老师", "猫", "狗", "鸟"],
     inanimate: ["书", "东西", "水", "苹果", "车"],
@@ -34,8 +31,6 @@ const fallbackLexicon = {
 
 async function loadLexicon() {
     if (lexicon) return lexicon;
-    
-    // Try to fetch local cedict.txt from GitHub Pages root
     try {
         const response = await fetch('cedict.txt');
         if (response.ok) {
@@ -43,17 +38,13 @@ async function loadLexicon() {
             lexicon = parseCedict(text);
             return lexicon;
         }
-    } catch (e) {
-        console.warn("Could not load cedict.txt, using fallback lexicon.");
-    }
-    
+    } catch (e) { console.warn("Using fallback lexicon."); }
     lexicon = fallbackLexicon;
     return lexicon;
 }
 
 function parseCedict(text) {
     const data = { animate: [], inanimate: [], location: [], verb: [], adj: [], adv: [], question_word: [] };
-    
     const animatePatterns = /\bperson\b|\bpeople\b|\bteacher\b|\bstudent\b|\bdoctor\b|\bchild\b|\bman\b|\bwoman\b|\banimal\b|\bbird\b|\bfish\b|\bdog\b|\bcat\b/i;
     const locationPatterns = /\bplace\b|\bcity\b|\bcountry\b|\broom\b|\bhouse\b|\bschool\b|\bstore\b|\bhospital\b|\bmountain\b|\briver\b/i;
     const questionPatterns = /\binterrogative\b|\bwhat\b|\bwho\b|\bwhere\b|\bhow\b|\bwhy\b|\bwhich\b|\bwhen\b/i;
@@ -63,10 +54,8 @@ function parseCedict(text) {
         if (line.startsWith('#') || !line.trim()) continue;
         const match = line.match(/^(.+?)\s+(.+?)\s+\[(.+?)\]\s+\/(.+)\//);
         if (!match) continue;
-        
         const [, trad, simp, pinyin, defs] = match;
         const defsLower = defs.toLowerCase();
-        
         if (simp.length > 4 || simp.length < 1) continue;
         if (!/^[\u4e00-\u9fff]+$/.test(simp)) continue;
         if (defsLower.includes('surname') || defsLower.includes('transliteration')) continue;
@@ -80,9 +69,7 @@ function parseCedict(text) {
         else if (/\badv\b|\badverb\b/.test(defsLower)) data.adv.push(simp);
         else data.inanimate.push(simp);
     }
-    
     for (const key in data) data[key] = [...new Set(data[key])];
-    
     if (!data.animate.length) data.animate = fallbackLexicon.animate;
     if (!data.inanimate.length) data.inanimate = fallbackLexicon.inanimate;
     if (!data.location.length) data.location = fallbackLexicon.location;
@@ -90,7 +77,6 @@ function parseCedict(text) {
     if (!data.adj.length) data.adj = fallbackLexicon.adj;
     if (!data.adv.length) data.adv = fallbackLexicon.adv;
     if (!data.question_word.length) data.question_word = fallbackLexicon.question_word;
-    
     return data;
 }
 
@@ -116,35 +102,26 @@ function generateNormalSentence(lex) {
         ["{animate}{question_word}去{location}？", ["animate", "question_word", "location"]],
         ["你{verb}{inanimate}还是{verb}{inanimate}？", ["verb", "inanimate", "verb", "inanimate"]]
     ];
-    
     const [tmpl, slots] = templates[Math.floor(Math.random() * templates.length)];
     const parts = {};
-    
     for (const slot of slots) {
         const list = lex[slot];
         parts[slot] = list && list.length ? list[Math.floor(Math.random() * list.length)] : "人";
     }
-    
     let result = tmpl;
-    for (const key in parts) {
-        const regex = new RegExp(`\\{${key}\\}`, 'g');
-        result = result.replace(regex, parts[key]);
-    }
+    for (const key in parts) result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), parts[key]);
     return result;
 }
 
 function makeAbsurd(sentence) {
     let words = Array.from(sentence);
     const insertions = Math.floor(Math.random() * 3) + 1;
-    
     for (let i = 0; i < insertions; i++) {
         const categories = Object.keys(ABSURD_WORDS);
         const category = categories[Math.floor(Math.random() * categories.length)];
         const absurdWord = ABSURD_WORDS[category][Math.floor(Math.random() * ABSURD_WORDS[category].length)];
-        
         const positions = ["start", "middle", "end"];
         const position = positions[Math.floor(Math.random() * positions.length)];
-        
         if (position === "start") {
             if (category === "exclamation") words.unshift(absurdWord + "，");
             else words.unshift(absurdWord);
@@ -162,39 +139,61 @@ function makeAbsurd(sentence) {
     return words.join("");
 }
 
-// UI Event Listeners
+// Global storage for generated sentences
+let currentNormalSentences = [];
+let currentAbsurdSentences = [];
+
 document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generateBtn');
-    const copyBtn = document.getElementById('copyBtn');
-    const output = document.getElementById('output');
-    const modeLabel = document.getElementById('modeLabel');
+    const smartCopyBtn = document.getElementById('smartCopyBtn');
+    const outputNormal = document.getElementById('outputNormal');
+    const outputAbsurd = document.getElementById('outputAbsurd');
     
     generateBtn.addEventListener('click', async () => {
         generateBtn.disabled = true;
-        output.textContent = "Loading dictionary and generating...";
+        outputNormal.textContent = "Loading...";
+        outputAbsurd.textContent = "Loading...";
         
         const lex = await loadLexicon();
-        const mode = document.querySelector('input[name="mode"]:checked').value;
-        const count = Math.min(parseInt(document.getElementById('count').value) || 5, 50);
+        // Generating a batch of 50 for each side to have variety
+        currentNormalSentences = [];
+        currentAbsurdSentences = [];
         
-        modeLabel.textContent = `(${mode})`;
-        
-        const sentences = [];
-        for (let i = 0; i < count; i++) {
-            let sentence = generateNormalSentence(lex);
-            if (mode === 'absurd') sentence = makeAbsurd(sentence);
-            sentences.push(sentence);
+        for (let i = 0; i < 50; i++) {
+            let s = generateNormalSentence(lex);
+            currentNormalSentences.push(s);
+            currentAbsurdSentences.push(makeAbsurd(s));
         }
         
-        output.textContent = sentences.join('\n');
+        outputNormal.textContent = currentNormalSentences.slice(0, 10).join('\n') + "\n... (more generated)";
+        outputAbsurd.textContent = currentAbsurdSentences.slice(0, 10).join('\n') + "\n... (more generated)";
         generateBtn.disabled = false;
     });
     
-    copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(output.textContent).then(() => {
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = "✅ Copied!";
-            setTimeout(() => copyBtn.textContent = originalText, 2000);
+    smartCopyBtn.addEventListener('click', () => {
+        const total = parseInt(document.getElementById('copyCount').value) || 10;
+        const half = Math.floor(total / 2);
+        const remainder = total % 2;
+        
+        // Shuffle arrays to get random ones
+        const shuffledNormal = [...currentNormalSentences].sort(() => 0.5 - Math.random());
+        const shuffledAbsurd = [...currentAbsurdSentences].sort(() => 0.5 - Math.random());
+        
+        let finalList = [];
+        
+        // Add normals
+        finalList.push(...shuffledNormal.slice(0, half));
+        // Add absurds
+        finalList.push(...shuffledAbsurd.slice(0, half + remainder));
+        
+        // Final shuffle to mix them up
+        finalList.sort(() => 0.5 - Math.random());
+        
+        const textToCopy = finalList.join('\n');
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const originalText = smartCopyBtn.textContent;
+            smartCopyBtn.textContent = `✅ Copied ${total} sentences!`;
+            setTimeout(() => smartCopyBtn.textContent = originalText, 2000);
         });
     });
 });

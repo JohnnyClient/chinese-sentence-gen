@@ -186,7 +186,7 @@ const absurdOutput = document.getElementById('absurdOutput');
          setTimeout(() => btn.textContent = orig, 2000);
      });
  });
- // 3. Умное комбинированное копирование 50/50 (без переносов)
+ // 3. Умное комбинированное копирование 50/50 (СЛУЧАЙНЫЙ ВЫБОР И ПОРЯДОК)
  copyCombinedBtn.addEventListener('click', () => {
      if (generatedNormal.length === 0) return alert("Сначала сгенерируйте предложения!");
      let copyNum = parseInt(document.getElementById('copyCount').value) || 10;
@@ -198,27 +198,30 @@ const absurdOutput = document.getElementById('absurdOutput');
      const halfCopy = Math.floor(copyNum / 2);
      const normalExtra = copyNum % 2; 
      
-     // Функция для случайного выбора без изменения оригинальных массивов
-     function shuffle(arr) {
-         const res = [...arr];
-         for (let i = res.length - 1; i > 0; i--) {
-             const j = Math.floor(Math.random() * (i + 1));
-             [res[i], res[j]] = [res[j], res[i]];
+     // Функция для получения случайных элементов без повторений
+     function getRandomElements(arr, count) {
+         const result = [];
+         const copy = [...arr];
+         for (let i = 0; i < count && copy.length > 0; i++) {
+             const randomIndex = Math.floor(Math.random() * copy.length);
+             result.push(copy.splice(randomIndex, 1)[0]);
          }
-         return res;
+         return result;
      }
 
-     // Берем случайные предложения, а не первые
-     const normalToCopy = shuffle(generatedNormal).slice(0, halfCopy + normalExtra);
-     const absurdToCopy = shuffle(generatedAbsurd).slice(0, halfCopy);
+     // Берем случайные, а не первые
+     const normalToCopy = getRandomElements(generatedNormal, halfCopy + normalExtra);
+     const absurdToCopy = getRandomElements(generatedAbsurd, halfCopy);
 
-     // Чередование
-     const combined = [];
-     const maxLen = Math.max(normalToCopy.length, absurdToCopy.length);
-     for (let i = 0; i < maxLen; i++) {
-         if (i < normalToCopy.length) combined.push(normalToCopy[i]);
-         if (i < absurdToCopy.length) combined.push(absurdToCopy[i]);
+     // Собираем в один массив
+     const combined = [...normalToCopy, ...absurdToCopy];
+     
+     // Перемешиваем массив (алгоритм Фишера-Йетса), чтобы порядок был полностью случайным
+     for (let i = combined.length - 1; i > 0; i--) {
+         const j = Math.floor(Math.random() * (i + 1));
+         [combined[i], combined[j]] = [combined[j], combined[i]];
      }
+
      copyToClipboard(combined.join('\n'));
      const orig = copyCombinedBtn.textContent;
      copyCombinedBtn.textContent = "✅ Скопировано 50/50!";

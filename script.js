@@ -28,18 +28,6 @@ adj: [ "好 ",  "大 ",  "小 ",  "漂亮 ",  "聪明 "],
 adv: [ "很 ",  "都 ",  "也 ",  "经常 ",  "已经 "],
 question_word: [ "什么 ",  "谁 ",  "哪里 ",  "为什么 ",  "怎么 ",  "几 ",  "多少 "]
 };
-
-// --- ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ СЛУЧАЙНОГО ВЫБОРА ---
-function getRandomElements(arr, count) {
-    const shuffled = [...arr];
-    // Алгоритм Фишера-Йетса для честного перемешивания
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, count);
-}
-
 async function loadLexicon() {
 if (lexicon) return lexicon;
 try {
@@ -152,7 +140,6 @@ const generateBtn = document.getElementById('generateBtn');
 const copyCombinedBtn = document.getElementById('copyCombinedBtn');
 const normalOutput = document.getElementById('normalOutput');
 const absurdOutput = document.getElementById('absurdOutput');
-
 // 1. Генерация (АБСОЛЮТНО НЕЗАВИСИМЫЕ ДРУГ ОТ ДРУГА ПРЕДЛОЖЕНИЯ)
  generateBtn.addEventListener('click', async () => {
      generateBtn.disabled = true;
@@ -165,7 +152,10 @@ const absurdOutput = document.getElementById('absurdOutput');
      generatedNormal = [];
      generatedAbsurd = [];
      for (let i = 0; i < halfCount; i++) {
+         // Левое окно: генерируем независимое нормальное предложение
          generatedNormal.push(generateNormalSentence(lex));
+         // Правое окно: генерируем НЕЗАВИСИМОЕ абсурдное предложение
+         // (Сначала рандомно создается база, потом она абсурдизируется)
          let absurdBase = generateNormalSentence(lex);
          generatedAbsurd.push(makeAbsurd(absurdBase));
      }
@@ -173,10 +163,10 @@ const absurdOutput = document.getElementById('absurdOutput');
      absurdOutput.textContent = generatedAbsurd.join('\n');
      generateBtn.disabled = false;
  });
- 
- // Вспомогательная функция для копирования (теперь добавляем пробел вместо пустоты)
+ // Вспомогательная функция для копирования БЕЗ переносов строк
  function copyToClipboard(text) {
-     const cleanText = text.replace(/\n/g, ' '); // <-- ИСПРАВЛЕНО: добавлен пробел
+     // Убираем все переносы строк, чтобы текст шел сплошным потоком
+     const cleanText = text.replace(/\n/g, ''); 
      navigator.clipboard.writeText(cleanText).then(() => {
          return true;
      }).catch(err => {
@@ -184,8 +174,7 @@ const absurdOutput = document.getElementById('absurdOutput');
          return false;
      });
  }
- 
- // 2. Копирование только Normal или только Absurd
+ // 2. Копирование только Normal или только Absurd (без переносов)
  document.querySelectorAll('.copy-single').forEach(btn => {
      btn.addEventListener('click', () => {
          const target = btn.getAttribute('data-target');
@@ -197,36 +186,40 @@ const absurdOutput = document.getElementById('absurdOutput');
          setTimeout(() => btn.textContent = orig, 2000);
      });
  });
- 
- // 3. Умное комбинированное копирование 50/50 (СЛУЧАЙНЫЙ ВЫБОР + ПЕРЕМЕШИВАНИЕ)
+ // 3. Умное комбинированное копирование 50/50 (без переносов)
  copyCombinedBtn.addEventListener('click', () => {
      if (generatedNormal.length === 0) return alert("Сначала сгенерируйте предложения!");
      let copyNum = parseInt(document.getElementById('copyCount').value) || 10;
-     const maxAvailable = generatedNormal.length * 2; 
+     const maxAvailable = generatedNormal.length * 2;
      if (copyNum > maxAvailable) {
          alert(`Доступно только ${maxAvailable} предложений! Берем максимум...`);
          copyNum = maxAvailable;
      }
-     
-     // Считаем сколько нужно взять каждого типа для сохранения баланса 50/50
      const halfCopy = Math.floor(copyNum / 2);
      const normalExtra = copyNum % 2; 
      
-     // БЕРЕМ СЛУЧАЙНЫЕ предложения, а не первые
-     const normalToCopy = getRandomElements(generatedNormal, halfCopy + normalExtra);
-     const absurdToCopy = getRandomElements(generatedAbsurd, halfCopy);
-     
-     // Объединяем в один массив
-     const combined = [...normalToCopy, ...absurdToCopy];
-     
-     // ПЕРЕМЕШИВАЕМ итоговый массив, чтобы они шли не по порядку (не чередовались)
-     for (let i = combined.length - 1; i > 0; i--) {
-         const j = Math.floor(Math.random() * (i + 1));
-         [combined[i], combined[j]] = [combined[j], combined[i]];
+     // Функция для случайного выбора без изменения оригинальных массивов
+     function shuffle(arr) {
+         const res = [...arr];
+         for (let i = res.length - 1; i > 0; i--) {
+             const j = Math.floor(Math.random() * (i + 1));
+             [res[i], res[j]] = [res[j], res[i]];
+         }
+         return res;
      }
-     
+
+     // Берем случайные предложения, а не первые
+     const normalToCopy = shuffle(generatedNormal).slice(0, halfCopy + normalExtra);
+     const absurdToCopy = shuffle(generatedAbsurd).slice(0, halfCopy);
+
+     // Чередование
+     const combined = [];
+     const maxLen = Math.max(normalToCopy.length, absurdToCopy.length);
+     for (let i = 0; i < maxLen; i++) {
+         if (i < normalToCopy.length) combined.push(normalToCopy[i]);
+         if (i < absurdToCopy.length) combined.push(absurdToCopy[i]);
+     }
      copyToClipboard(combined.join('\n'));
-     
      const orig = copyCombinedBtn.textContent;
      copyCombinedBtn.textContent = "✅ Скопировано 50/50!";
      setTimeout(() => copyCombinedBtn.textContent = orig, 2000);

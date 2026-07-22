@@ -1,32 +1,32 @@
 // Словарь абсурдных слов
 const ABSURD_WORDS = {
-noun: [ "小阴茎 ",  "阴茎 ",  "屁股 ",  "放屁 ",  "狗屁 ",  "王八 ",  "笨蛋 ",  "傻瓜 ",  "混蛋 ",  "夜壶 ",  "马桶 ",  "拖鞋 ",  "臭虫 ",  "蟑螂 ",  "腋窝 ",  "挠痒癖 ",  "克尼斯莫拉格尼亚 ",  "挠痒痒 "],
-verb: [ "放屁 ",  "拉屎 ",  "撒尿 ",  "打嗝 ",  "吃屎 ",  "喝尿 ",  "放风 ",  "扯淡 ",  "挠痒痒 "],
-exclamation: [ "卧槽 ",  "我靠 ",  "天哪 ",  "我的妈 ",  "见鬼 ",  "靠 ",  "妈的 ",  "哎呀 ",  "哇塞 "],
-adj: [ "傻逼 ",  "牛逼 ",  "变态 ",  "恶心 ",  "臭 ",  "脏 ",  "丑 ",  "奇葩 "]
+noun: ["小阴茎", "阴茎", "屁股", "放屁", "狗屁", "王八", "笨蛋", "傻瓜", "混蛋", "夜壶", "马桶", "拖鞋", "臭虫", "蟑螂", "腋窝", "挠痒癖", "克尼斯莫拉格尼亚", "挠痒痒"],
+verb: ["放屁", "拉屎", "撒尿", "打嗝", "吃屎", "喝尿", "放风", "扯淡", "挠痒痒"],
+exclamation: ["卧槽", "我靠", "天哪", "我的妈", "见鬼", "靠", "妈的", "哎呀", "哇塞"],
+adj: ["傻逼", "牛逼", "变态", "恶心", "臭", "脏", "丑", "奇葩"]
 };
 const BLACKLIST = new Set([
- "副词 ",  "名词 ",  "动词 ",  "形容词 ",  "状语 ",  "定语 ",  "主语 ",  "谓语 ",  "宾语 ",  "补语 ",
- "语法 ",  "词性 ",  "词类 ",  "句子 ",  "短语 ",  "词汇 ",  "语言 ",  "文字 ",  "汉字 ",
- "拼音 ",  "注音 ",  "音标 ",  "声调 ",  "语调 ",  "方言 ",  "普通话 ",  "文言文 ",
- "概念 ",  "理论 ",  "定义 ",  "原理 ",  "规律 ",  "法则 ",  "公式 ",  "方程 ",
- "意思 ",  "含义 ",  "解释 ",  "说明 ",  "描述 ",  "表达 ",  "表示 ",
- "程序 ",  "代码 ",  "算法 ",  "函数 ",  "变量 ",  "参数 ",  "接口 ",  "模块 ",
- "老兄 ",  "哥们 ",  "家伙 ",  "小子 ",  "丫头 ",  "婆娘 ",
- "将军 ",  "司令 ",  "政委 ",  "元帅 ",  "军事 ",  "战略 ",  "战术 ",
- "菩萨 ",  "佛祖 ",  "上帝 ",  "天使 ",  "魔鬼 ",  "神仙 "
+ "副词", "名词", "动词", "形容词", "状语", "定语", "主语", "谓语", "宾语", "补语",
+ "语法", "词性", "词类", "句子", "短语", "词汇", "语言", "文字", "汉字",
+ "拼音", "注音", "音标", "声调", "语调", "方言", "普通话", "文言文",
+ "概念", "理论", "定义", "原理", "规律", "法则", "公式", "方程",
+ "意思", "含义", "解释", "说明", "描述", "表达", "表示",
+ "程序", "代码", "算法", "函数", "变量", "参数", "接口", "模块",
+ "老兄", "哥们", "家伙", "小子", "丫头", "婆娘",
+ "将军", "司令", "政委", "元帅", "军事", "战略", "战术",
+ "菩萨", "佛祖", "上帝", "天使", "魔鬼", "神仙"
 ]);
 let lexicon = null;
 let generatedNormal = [];
 let generatedAbsurd = [];
 const fallbackLexicon = {
-animate: [ "人 ",  "学生 ",  "老师 ",  "猫 ",  "狗 ",  "鸟 "],
-inanimate: [ "书 ",  "东西 ",  "水 ",  "苹果 ",  "车 "],
-location: [ "学校 ",  "家 ",  "中国 ",  "北京 ",  "商店 "],
-verb: [ "吃 ",  "看 ",  "去 ",  "做 ",  "喝 ",  "买 "],
-adj: [ "好 ",  "大 ",  "小 ",  "漂亮 ",  "聪明 "],
-adv: [ "很 ",  "都 ",  "也 ",  "经常 ",  "已经 "],
-question_word: [ "什么 ",  "谁 ",  "哪里 ",  "为什么 ",  "怎么 ",  "几 ",  "多少 "]
+animate: ["人", "学生", "老师", "猫", "狗", "鸟"],
+inanimate: ["书", "东西", "水", "苹果", "车"],
+location: ["学校", "家", "中国", "北京", "商店"],
+verb: ["吃", "看", "去", "做", "喝", "买"],
+adj: ["好", "大", "小", "漂亮", "聪明"],
+adv: ["很", "都", "也", "经常", "已经"],
+question_word: ["什么", "谁", "哪里", "为什么", "怎么", "几", "多少"]
 };
 async function loadLexicon() {
 if (lexicon) return lexicon;
@@ -79,25 +79,25 @@ const lines = text.split('\n');
 }
 function generateNormalSentence(lex) {
 const templates = [
-[ "{animate}{verb}{inanimate}。 ", [ "animate ",  "verb ",  "inanimate "]],
-[ "{animate}{verb}{location}。 ", [ "animate ",  "verb ",  "location "]],
-[ "{animate}{adv}{verb}{inanimate}。 ", [ "animate ",  "adv ",  "verb ",  "inanimate "]],
-[ "我{verb}{inanimate}。 ", [ "verb ",  "inanimate "]],
-[ "你{verb}{location}。 ", [ "verb ",  "location "]],
-[ "{animate}{verb}{adj}{inanimate}。 ", [ "animate ",  "verb ",  "adj ",  "inanimate "]],
-[ "{animate}{verb}{inanimate}吗？ ", [ "animate ",  "verb ",  "inanimate "]],
-[ "{animate}{verb}{location}吗？ ", [ "animate ",  "verb ",  "location "]],
-[ "你{verb}{inanimate}吗？ ", [ "verb ",  "inanimate "]],
-[ "你{verb}{location}吗？ ", [ "verb ",  "location "]],
-[ "{animate}在{verb}什么？ ", [ "animate ",  "verb "]],
-[ "{animate}{verb}什么{inanimate}？ ", [ "animate ",  "verb ",  "inanimate "]],
-[ "谁{verb}{inanimate}？ ", [ "verb ",  "inanimate "]],
-[ "谁{verb}{location}？ ", [ "verb ",  "location "]],
-[ "{animate}去{question_word}？ ", [ "animate ",  "question_word "]],
-[ "{animate}{question_word}{verb}{inanimate}？ ", [ "animate ",  "question_word ",  "verb ",  "inanimate "]],
-[ "{animate}{question_word}{verb}{location}？ ", [ "animate ",  "question_word ",  "verb ",  "location "]],
-[ "{animate}{question_word}去{location}？ ", [ "animate ",  "question_word ",  "location "]],
-[ "你{verb}{inanimate}还是{verb}{inanimate}？ ", [ "verb ",  "inanimate ",  "verb ",  "inanimate "]]
+["{animate}{verb}{inanimate}。", ["animate", "verb", "inanimate"]],
+["{animate}{verb}{location}。", ["animate", "verb", "location"]],
+["{animate}{adv}{verb}{inanimate}。", ["animate", "adv", "verb", "inanimate"]],
+["我{verb}{inanimate}。", ["verb", "inanimate"]],
+["你{verb}{location}。", ["verb", "location"]],
+["{animate}{verb}{adj}{inanimate}。", ["animate", "verb", "adj", "inanimate"]],
+["{animate}{verb}{inanimate}吗？", ["animate", "verb", "inanimate"]],
+["{animate}{verb}{location}吗？", ["animate", "verb", "location"]],
+["你{verb}{inanimate}吗？", ["verb", "inanimate"]],
+["你{verb}{location}吗？", ["verb", "location"]],
+["{animate}在{verb}什么？", ["animate", "verb"]],
+["{animate}{verb}什么{inanimate}？", ["animate", "verb", "inanimate"]],
+["谁{verb}{inanimate}？", ["verb", "inanimate"]],
+["谁{verb}{location}？", ["verb", "location"]],
+["{animate}去{question_word}？", ["animate", "question_word"]],
+["{animate}{question_word}{verb}{inanimate}？", ["animate", "question_word", "verb", "inanimate"]],
+["{animate}{question_word}{verb}{location}？", ["animate", "question_word", "verb", "location"]],
+["{animate}{question_word}去{location}？", ["animate", "question_word", "location"]],
+["你{verb}{inanimate}还是{verb}{inanimate}？", ["verb", "inanimate", "verb", "inanimate"]]
 ];
 const [tmpl, slots] = templates[Math.floor(Math.random() * templates.length)];
 const parts = {};
@@ -152,10 +152,7 @@ const absurdOutput = document.getElementById('absurdOutput');
      generatedNormal = [];
      generatedAbsurd = [];
      for (let i = 0; i < halfCount; i++) {
-         // Левое окно: генерируем независимое нормальное предложение
          generatedNormal.push(generateNormalSentence(lex));
-         // Правое окно: генерируем НЕЗАВИСИМОЕ абсурдное предложение
-         // (Сначала рандомно создается база, потом она абсурдизируется)
          let absurdBase = generateNormalSentence(lex);
          generatedAbsurd.push(makeAbsurd(absurdBase));
      }
@@ -165,7 +162,6 @@ const absurdOutput = document.getElementById('absurdOutput');
  });
  // Вспомогательная функция для копирования БЕЗ переносов строк
  function copyToClipboard(text) {
-     // Убираем все переносы строк, чтобы текст шел сплошным потоком
      const cleanText = text.replace(/\n/g, ''); 
      navigator.clipboard.writeText(cleanText).then(() => {
          return true;
@@ -198,7 +194,6 @@ const absurdOutput = document.getElementById('absurdOutput');
      const halfCopy = Math.floor(copyNum / 2);
      const normalExtra = copyNum % 2; 
      
-     // Функция для получения случайных элементов без повторений
      function getRandomElements(arr, count) {
          const result = [];
          const copy = [...arr];
@@ -209,14 +204,11 @@ const absurdOutput = document.getElementById('absurdOutput');
          return result;
      }
 
-     // Берем случайные, а не первые
      const normalToCopy = getRandomElements(generatedNormal, halfCopy + normalExtra);
      const absurdToCopy = getRandomElements(generatedAbsurd, halfCopy);
 
-     // Собираем в один массив
      const combined = [...normalToCopy, ...absurdToCopy];
      
-     // Перемешиваем массив (алгоритм Фишера-Йетса), чтобы порядок был полностью случайным
      for (let i = combined.length - 1; i > 0; i--) {
          const j = Math.floor(Math.random() * (i + 1));
          [combined[i], combined[j]] = [combined[j], combined[i]];
